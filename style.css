@@ -1,1 +1,27 @@
+body {
+  font-family: Arial;
+  background: #0f0f1a;
+  color: white;
+  text-align: center;
+}
 
+.container {
+  margin-top: 50px;
+}
+
+button {
+  padding: 10px 20px;
+  background: #4CAF50;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+#questionBox {
+  margin-top: 20px;
+}
+
+#resultBox {
+  margin-top: 30px;
+  font-size: 18px;
+}
