@@ -458,6 +458,13 @@ function startRace() {
   racing = true;
   paused = false;
   setPlayingUI(true);
+  // Snap camera behind the car immediately
+  const behind = new THREE.Vector3(0, 3.2, -7.2);
+  behind.applyAxisAngle(new THREE.Vector3(0, 1, 0), car.rotation.y);
+  camera.position.copy(car.position).add(behind);
+  const look = car.position.clone();
+  look.y += 1.1;
+  camera.lookAt(look);
   clock.start();
 }
 
@@ -609,11 +616,15 @@ function updateCamera(dt) {
 function updateCar(dt) {
   if (input.accel) speed += ACCEL * dt;
   if (input.brake) speed -= BRAKE * dt;
-  speed -= DRAG * dt * Math.sign(speed || 1) * (Math.abs(speed) > 0.2 ? 1 : 0);
   if (!input.accel && !input.brake) {
-    speed *= Math.pow(0.35, dt);
+    speed *= Math.pow(0.2, dt);
+  } else if (!input.accel && input.brake) {
+    /* braking already applied */
+  } else {
+    speed -= Math.sign(speed) * DRAG * dt;
   }
-  speed = THREE.MathUtils.clamp(speed, -8, MAX_SPEED);
+  if (Math.abs(speed) < 0.05 && !input.accel) speed = 0;
+  speed = THREE.MathUtils.clamp(speed, -10, MAX_SPEED);
 
   const steerFactor = THREE.MathUtils.clamp(Math.abs(speed) / 12, 0.2, 1);
   car.rotation.y += input.steer * STEER_SPEED * steerFactor * dt * Math.sign(speed || 1);
@@ -751,16 +762,30 @@ ui.lockDeviceBtn.addEventListener("click", () => {
   ui.unlockInput.focus();
 });
 
+async function tryQueryUnlock() {
+  const params = new URLSearchParams(window.location.search);
+  const key = params.get("key") || params.get("unlock");
+  if (!key) return false;
+  if (!(await isValidKey(key))) return false;
+  persistUnlock();
+  // Remove the key from the address bar so it isn't left sitting in history.
+  const clean = window.location.pathname + window.location.hash;
+  window.history.replaceState({}, "", clean);
+  return true;
+}
+
 // Boot
 updateBestReadout();
-if (deviceUnlocked()) {
-  enterUnlocked();
-} else {
-  show(ui.lockScreen);
-  hide(ui.menuScreen);
-  // Still warm up the scene behind the lock for a snappy unlock.
-  createWorld();
-  setupControls();
-  window.addEventListener("resize", onResize);
-  animate();
-}
+const boot = async () => {
+  if (deviceUnlocked() || (await tryQueryUnlock())) {
+    await enterUnlocked();
+  } else {
+    show(ui.lockScreen);
+    hide(ui.menuScreen);
+    createWorld();
+    setupControls();
+    window.addEventListener("resize", onResize);
+    animate();
+  }
+};
+boot();
