@@ -325,12 +325,19 @@ function createWorld() {
     400
   );
 
-  renderer = new THREE.WebGLRenderer({
-    canvas: ui.canvas,
-    antialias: true,
-    alpha: false,
-    powerPreference: "high-performance",
-  });
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas: ui.canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
+    });
+  } catch (err) {
+    console.error(err);
+    throw new Error(
+      "WebGL is required for Leo Poly Track. Try Safari on your iPad."
+    );
+  }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.setClearColor("#9ad7ef");
@@ -451,6 +458,7 @@ function resetRace() {
 }
 
 function startRace() {
+  if (!sceneReady || !car || !trackCurve) return;
   hide(ui.menuScreen);
   hide(ui.pauseScreen);
   hide(ui.finishScreen);
@@ -715,14 +723,22 @@ function onResize() {
 async function enterUnlocked() {
   unlocked = true;
   hide(ui.lockScreen);
-  show(ui.menuScreen);
   updateBestReadout();
   if (!sceneReady) {
-    createWorld();
-    setupControls();
-    window.addEventListener("resize", onResize);
-    animate();
+    try {
+      createWorld();
+      setupControls();
+      window.addEventListener("resize", onResize);
+      animate();
+    } catch (err) {
+      show(ui.lockScreen);
+      ui.unlockError.hidden = false;
+      ui.unlockError.textContent =
+        "WebGL unavailable in this browser. Open in Safari on your iPad.";
+      return;
+    }
   }
+  show(ui.menuScreen);
 }
 
 ui.unlockForm.addEventListener("submit", async (e) => {
@@ -782,10 +798,15 @@ const boot = async () => {
   } else {
     show(ui.lockScreen);
     hide(ui.menuScreen);
-    createWorld();
-    setupControls();
-    window.addEventListener("resize", onResize);
-    animate();
+    try {
+      createWorld();
+      setupControls();
+      window.addEventListener("resize", onResize);
+      animate();
+    } catch (err) {
+      // Keep the lock UI usable even if WebGL fails during warm-up.
+      console.error(err);
+    }
   }
 };
 boot();

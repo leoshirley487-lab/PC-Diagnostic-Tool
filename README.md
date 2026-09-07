@@ -18,6 +18,8 @@ This build only unlocks for you:
 
 After a successful unlock, this iPad stays unlocked until you tap **Lock this device**.
 
+You can also open once with `?key=leopoly` — the key is checked, saved to this device, then stripped from the address bar.
+
 ## Desktop controls
 
 - Steer: `A` / `D` or arrow keys
