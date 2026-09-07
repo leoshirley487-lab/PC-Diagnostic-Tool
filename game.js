@@ -13,10 +13,10 @@ const BEST_KEY = "leo-poly-track-best-v1";
 const TOTAL_LAPS = 3;
 const TRACK_WIDTH = 10;
 const MAX_SPEED = 42;
-const ACCEL = 28;
-const BRAKE = 38;
-const DRAG = 8;
-const STEER_SPEED = 2.35;
+const ACCEL = 34;
+const BRAKE = 42;
+const DRAG = 5;
+const STEER_SPEED = 2.5;
 
 const ui = {
   lockScreen: document.getElementById("lock-screen"),
@@ -160,13 +160,15 @@ function buildTrackCurve() {
 }
 
 function createTrackMesh(curve) {
-  const segments = 240;
+  const group = new THREE.Group();
+  const segments = 280;
   const half = TRACK_WIDTH / 2;
   const positions = [];
   const colors = [];
   const indices = [];
-  const colorAsphalt = new THREE.Color("#404652");
-  const colorEdge = new THREE.Color("#f4f7fb");
+  const colorAsphalt = new THREE.Color("#2f3540");
+  const colorEdge = new THREE.Color("#ffffff");
+  const colorLane = new THREE.Color("#d7dde8");
   const up = new THREE.Vector3(0, 1, 0);
 
   for (let i = 0; i <= segments; i++) {
@@ -174,28 +176,51 @@ function createTrackMesh(curve) {
     const point = curve.getPointAt(t);
     const tangent = curve.getTangentAt(t).normalize();
     const side = new THREE.Vector3().crossVectors(up, tangent).normalize();
+
     const left = point.clone().addScaledVector(side, half);
+    const leftPaint = point.clone().addScaledVector(side, half * 0.88);
+    const leftLane = point.clone().addScaledVector(side, 0.18);
+    const rightLane = point.clone().addScaledVector(side, -0.18);
+    const rightPaint = point.clone().addScaledVector(side, -half * 0.88);
     const right = point.clone().addScaledVector(side, -half);
-    const leftInner = point.clone().addScaledVector(side, half * 0.82);
-    const rightInner = point.clone().addScaledVector(side, -half * 0.82);
 
     for (const [v, c] of [
       [left, colorEdge],
-      [leftInner, colorAsphalt],
-      [rightInner, colorAsphalt],
+      [leftPaint, colorEdge],
+      [leftLane, colorAsphalt],
+      [rightLane, colorAsphalt],
+      [rightPaint, colorEdge],
       [right, colorEdge],
     ]) {
-      positions.push(v.x, 0.05, v.z);
+      positions.push(v.x, 0.08, v.z);
       colors.push(c.r, c.g, c.b);
+    }
+
+    // dashed center suggestion every other segment
+    if (i % 2 === 0) {
+      const c0 = point.clone().addScaledVector(side, 0.18);
+      const c1 = point.clone().addScaledVector(side, -0.18);
+      // tint asphalt lane slightly lighter for a soft mid stripe
+      const base = (positions.length / 3 - 4) * 3;
+      colors[base] = colorLane.r;
+      colors[base + 1] = colorLane.g;
+      colors[base + 2] = colorLane.b;
+      colors[base + 3] = colorLane.r;
+      colors[base + 4] = colorLane.g;
+      colors[base + 5] = colorLane.b;
+      void c0;
+      void c1;
     }
   }
 
   for (let i = 0; i < segments; i++) {
-    const a = i * 4;
-    const b = (i + 1) * 4;
-    indices.push(a, b, a + 1, a + 1, b, b + 1);
-    indices.push(a + 1, b + 1, a + 2, a + 2, b + 1, b + 2);
-    indices.push(a + 2, b + 2, a + 3, a + 3, b + 2, b + 3);
+    const a = i * 6;
+    const b = (i + 1) * 6;
+    for (let k = 0; k < 5; k++) {
+      // CCW winding so the top face is visible from above
+      indices.push(a + k, a + k + 1, b + k);
+      indices.push(a + k + 1, b + k + 1, b + k);
+    }
   }
 
   const geo = new THREE.BufferGeometry();
@@ -207,10 +232,33 @@ function createTrackMesh(curve) {
   const mat = new THREE.MeshLambertMaterial({
     vertexColors: true,
     flatShading: true,
+    side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
-  return mesh;
+  group.add(mesh);
+
+  // Raised curb rails for Poly Track silhouette
+  const railMat = new THREE.MeshLambertMaterial({
+    color: "#f2f5fa",
+    flatShading: true,
+  });
+  const railGeo = new THREE.BoxGeometry(0.35, 0.55, 1);
+  for (let i = 0; i < segments; i += 3) {
+    const t = i / segments;
+    const point = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t).normalize();
+    const side = new THREE.Vector3().crossVectors(up, tangent).normalize();
+    for (const sign of [1, -1]) {
+      const rail = new THREE.Mesh(railGeo, railMat);
+      rail.position.copy(point).addScaledVector(side, sign * (half + 0.15));
+      rail.position.y = 0.28;
+      rail.lookAt(point.clone().add(tangent));
+      group.add(rail);
+    }
+  }
+
+  return group;
 }
 
 function createCar() {
@@ -268,7 +316,7 @@ function createCar() {
 
 function createWorld() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog("#b7e0ef", 70, 180);
+  scene.fog = new THREE.Fog("#b7e0ef", 110, 220);
 
   camera = new THREE.PerspectiveCamera(
     55,
@@ -459,18 +507,24 @@ function finishRace() {
 function bindTouchButton(el, on, off) {
   const start = (e) => {
     e.preventDefault();
+    el.setPointerCapture?.(e.pointerId);
     el.classList.add("is-active");
     on();
   };
   const end = (e) => {
     e.preventDefault();
+    try {
+      el.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* already released */
+    }
     el.classList.remove("is-active");
     off();
   };
   el.addEventListener("pointerdown", start);
   el.addEventListener("pointerup", end);
-  el.addEventListener("pointerleave", end);
   el.addEventListener("pointercancel", end);
+  el.addEventListener("lostpointercapture", end);
 }
 
 function setupControls() {

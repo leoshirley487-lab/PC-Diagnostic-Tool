@@ -165,7 +165,7 @@ button.ghost {
 #hud {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 12;
   pointer-events: none;
 }
 
@@ -230,11 +230,12 @@ button.ghost {
   position: absolute;
   top: calc(12px + var(--safe-top));
   left: calc(12px + var(--safe-left));
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 16px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.85);
+  z-index: 13;
+  background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
   box-shadow: 0 8px 24px rgba(28, 36, 48, 0.12);
 }
@@ -244,6 +245,11 @@ button.ghost {
   inset: 0;
   z-index: 11;
   pointer-events: none;
+}
+
+#touch-controls .steer-pad,
+#touch-controls .drive-pad {
+  z-index: 11;
 }
 
 .steer-pad,
