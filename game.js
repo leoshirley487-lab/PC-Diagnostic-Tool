@@ -82,8 +82,15 @@ function normalizeKey(value) {
 
 async function isValidKey(raw) {
   const normalized = normalizeKey(raw);
-  const hash = await sha256Hex(normalized);
-  return hash === UNLOCK_HASH || hash === UNLOCK_HASH_ALT;
+  // Direct match first (works even if SubtleCrypto is unavailable).
+  if (normalized === "leopoly" || normalized === "leogshirley") return true;
+  if (!globalThis.crypto?.subtle) return false;
+  try {
+    const hash = await sha256Hex(normalized);
+    return hash === UNLOCK_HASH || hash === UNLOCK_HASH_ALT;
+  } catch {
+    return false;
+  }
 }
 
 function deviceUnlocked() {
@@ -334,6 +341,11 @@ function createWorld() {
     });
   } catch (err) {
     console.error(err);
+    throw new Error(
+      "WebGL is required for Leo Poly Track. Try Safari on your iPad."
+    );
+  }
+  if (!renderer.getContext()) {
     throw new Error(
       "WebGL is required for Leo Poly Track. Try Safari on your iPad."
     );
