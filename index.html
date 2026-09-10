@@ -14,6 +14,15 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="boot-error" class="overlay-screen" hidden>
+    <div class="lock-card">
+      <p class="brand">LEO POLY TRACK</p>
+      <h1>Couldn’t start</h1>
+      <p id="boot-error-copy" class="lock-copy">Something went wrong loading the game.</p>
+      <button type="button" id="boot-reload-btn">Try again</button>
+    </div>
+  </div>
+
   <div id="lock-screen" class="overlay-screen">
     <div class="lock-card">
       <p class="brand">LEO POLY TRACK</p>
@@ -22,9 +31,11 @@
       <form id="unlock-form" autocomplete="off">
         <input
           id="unlock-input"
-          type="password"
+          type="text"
+          inputmode="text"
           enterkeyhint="go"
-          autocapitalize="off"
+          autocapitalize="none"
+          autocomplete="off"
           autocorrect="off"
           spellcheck="false"
           placeholder="Personal key"
@@ -101,14 +112,29 @@
 
   <canvas id="game-canvas"></canvas>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-      }
-    }
-  </script>
+  <!-- Relative import (no import maps) so older iPad Safari can load Three.js -->
   <script type="module" src="game.js"></script>
+  <script nomodule>
+    document.getElementById("boot-error").hidden = false;
+    document.getElementById("lock-screen").hidden = true;
+    document.getElementById("boot-error-copy").textContent =
+      "This iPad browser is too old for the game. Update Safari / iPadOS, then reload.";
+  </script>
+  <script>
+    document.getElementById("boot-reload-btn")?.addEventListener("click", function () {
+      location.reload();
+    });
+    // Surface module load failures (CDN/path/WebGL) instead of a blank screen.
+    window.addEventListener("unhandledrejection", function (event) {
+      var msg = (event && event.reason && (event.reason.message || String(event.reason))) || "Unknown error";
+      var box = document.getElementById("boot-error");
+      var copy = document.getElementById("boot-error-copy");
+      if (box && copy) {
+        box.hidden = false;
+        document.getElementById("lock-screen").hidden = true;
+        copy.textContent = "Load failed: " + msg;
+      }
+    });
+  </script>
 </body>
 </html>

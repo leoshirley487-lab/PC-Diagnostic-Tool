@@ -4,9 +4,11 @@ A private, Poly Track–style low-poly racer for Leo Shirley — built for iPad 
 
 ## Play on iPad
 
-1. Open the hosted page (GitHub Pages or any static host for this repo).
+Live site: [https://leoshirley487-lab.github.io/PC-Diagnostic-Tool/](https://leoshirley487-lab.github.io/PC-Diagnostic-Tool/)
+
+1. Open that link in **Safari** on your iPad.
 2. Enter your personal key when prompted.
-3. Tap **Race**. Use on-screen **◀ ▶**, **GAS**, and **BRAKE**.
+3. Tap **Race**. Hold **GAS**, steer with **◀ ▶**.
 4. Complete **3 laps**. Your best time is saved on this device.
 
 ### Personal key

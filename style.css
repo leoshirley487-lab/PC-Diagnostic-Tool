@@ -278,6 +278,9 @@ button.ghost {
   color: var(--ink);
   box-shadow: 0 10px 28px rgba(28, 36, 48, 0.16);
   font-size: 1.4rem;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .drive-btn {

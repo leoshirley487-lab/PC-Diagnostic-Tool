@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from "./vendor/three.module.min.js";
 
 const OWNER_NAME = "Leo Shirley";
 const OWNER_EMAIL = "leogshirley@outlook.com";
@@ -520,26 +520,45 @@ function finishRace() {
 }
 
 function bindTouchButton(el, on, off) {
+  let held = false;
   const start = (e) => {
     e.preventDefault();
-    el.setPointerCapture?.(e.pointerId);
+    e.stopPropagation();
+    if (held) return;
+    held = true;
+    if (e.pointerId != null) {
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
     el.classList.add("is-active");
     on();
   };
   const end = (e) => {
     e.preventDefault();
-    try {
-      el.releasePointerCapture?.(e.pointerId);
-    } catch {
-      /* already released */
+    e.stopPropagation();
+    if (!held) return;
+    held = false;
+    if (e.pointerId != null) {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {
+        /* already released */
+      }
     }
     el.classList.remove("is-active");
     off();
   };
+  // Pointer events (modern iPad) + touch fallback for older Safari.
   el.addEventListener("pointerdown", start);
   el.addEventListener("pointerup", end);
   el.addEventListener("pointercancel", end);
   el.addEventListener("lostpointercapture", end);
+  el.addEventListener("touchstart", start, { passive: false });
+  el.addEventListener("touchend", end, { passive: false });
+  el.addEventListener("touchcancel", end, { passive: false });
 }
 
 function setupControls() {
